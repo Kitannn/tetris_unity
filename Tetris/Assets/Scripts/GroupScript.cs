@@ -12,10 +12,13 @@ public class GroupScript : MonoBehaviour
         {
             Vector2 v = Grid.roundVec2(child.position);
 
+            // Not inside Border?
             if (!Grid.insideBorder(v))
                 return false;
 
-            if (Grid.grid[(int)v.x, (int)v.y] != null && Grid.grid[(int)v.x, (int)v.y].parent != transform)
+            // Block in grid cell (and not part of same group)?
+            if (Grid.grid[(int)v.x, (int)v.y] != null &&
+                Grid.grid[(int)v.x, (int)v.y].parent != transform)
                 return false;
         }
         return true;
@@ -23,12 +26,14 @@ public class GroupScript : MonoBehaviour
 
     void updateGrid()
     {
+        // Remove old children from grid
         for (int y = 0; y < Grid.h; ++y)
             for (int x = 0; x < Grid.w; ++x)
-                if (Grid.grid[x,y] != null)
-                    if (Grid.grid[x, y]. parent == transform)
+                if (Grid.grid[x, y] != null)
+                    if (Grid.grid[x, y].parent == transform)
                         Grid.grid[x, y] = null;
 
+        // Add new children to grid
         foreach (Transform child in transform)
         {
             Vector2 v = Grid.roundVec2(child.position);
@@ -45,29 +50,66 @@ public class GroupScript : MonoBehaviour
             Destroy(gameObject);
         }
     }
+
+    void groupfall()
+    {
+        // Modify position
+        transform.position += new Vector3(0, -1, 0);
+
+        // See if valid
+        if (isValidGridPos())
+        {
+            // It's valid. Update grid.
+            updateGrid();
+        }
+        else
+        {
+            // It's not valid. revert.
+            transform.position += new Vector3(0, 1, 0);
+
+            // Clear filled horizontal lines
+            Grid.deleteFullRows();
+
+            // Spawn next Group
+            FindObjectOfType<SpawnerScript>().spawnNext();
+
+            // Disable script
+            enabled = false;
+        }
+
+        lastFall = Time.time;
+    }
+
     // Update is called once per frame
     void Update()
     {
         //left
         if (Input.GetKeyDown(KeyCode.LeftArrow))
         {
+            // Modify position
             transform.position += new Vector3(-1, 0, 0);
 
-            //check valid
+            // See if valid
             if (isValidGridPos())
+                // Its valid. Update grid.
                 updateGrid();
             else
+                // Its not valid. revert.
                 transform.position += new Vector3(1, 0, 0);
         }
 
         //right
         else if (Input.GetKeyDown(KeyCode.RightArrow))
         {
+            // Modify position
             transform.position += new Vector3(1, 0, 0);
 
+            // See if valid
             if (isValidGridPos())
+                // It's valid. Update grid.
                 updateGrid();
             else
+                // It's not valid. revert.
                 transform.position += new Vector3(-1, 0, 0);
         }
 
@@ -76,32 +118,26 @@ public class GroupScript : MonoBehaviour
         {
             transform.Rotate(0, 0, -90);
 
-            if (isValidGridPos())
+            // See if valid
+            if (isValidGridPos() && gameObject.tag != "Cube")
+                // It's valid. Update grid.
                 updateGrid();
             else
+                // It's not valid. revert.
                 transform.Rotate(0, 0, 90);
         }
 
         //down
-        else if (Input.GetKeyDown(KeyCode.DownArrow) || Time.time - lastFall >= 1)
+        else if (Input.GetKeyDown(KeyCode.DownArrow) ||
+         Time.time - lastFall >= 1)
         {
-            transform.position += new Vector3(0, -1, 0);
-
-            if (isValidGridPos())
-                updateGrid();
-            else
-            {
-                transform.position += new Vector3(0, 1, 0);
-
-                //clear filled
-                Grid.deleteFullRows();
-                //next piece
-                FindObjectOfType<SpawnerScript>().spawnNext();
-                //disable movement
-                enabled = false;
-            }
-
-            lastFall = Time.time;
+            groupfall();
+        }
+        
+        else if (Input.GetKeyDown(KeyCode.Space))
+        {
+            while (enabled)
+                groupfall();
         }
     }
 }
