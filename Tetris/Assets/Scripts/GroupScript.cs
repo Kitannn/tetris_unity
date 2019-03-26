@@ -4,7 +4,9 @@ using UnityEngine;
 
 public class GroupScript : MonoBehaviour
 {
-    public float lastFall = 0;
+    public float lastFall;
+    public float lastkey;
+    public float timekeydown;
 
     bool isValidGridPos()
     {
@@ -49,6 +51,11 @@ public class GroupScript : MonoBehaviour
             Debug.Log("GAME OVER");
             Destroy(gameObject);
         }
+
+        lastFall = Time.time;
+        lastkey = Time.time;
+        timekeydown = Time.time;
+
     }
 
     void groupfall()
@@ -80,11 +87,22 @@ public class GroupScript : MonoBehaviour
         lastFall = Time.time;
     }
 
+    bool getKey(KeyCode key)
+    {
+        bool keydown = Input.GetKeyDown(key);
+        bool pressed = Input.GetKey(key) && Time.time - lastkey > 0.5f && Time.time - timekeydown > 0.05f;
+
+        if (keydown)
+            lastkey = Time.time;
+
+        return keydown || pressed;
+    }
+
     // Update is called once per frame
     void Update()
     {
         //left
-        if (Input.GetKeyDown(KeyCode.LeftArrow))
+        if (getKey(KeyCode.LeftArrow))
         {
             // Modify position
             transform.position += new Vector3(-1, 0, 0);
@@ -99,7 +117,7 @@ public class GroupScript : MonoBehaviour
         }
 
         //right
-        else if (Input.GetKeyDown(KeyCode.RightArrow))
+        else if (getKey(KeyCode.RightArrow))
         {
             // Modify position
             transform.position += new Vector3(1, 0, 0);
@@ -114,7 +132,7 @@ public class GroupScript : MonoBehaviour
         }
 
         //rotate
-        else if (Input.GetKeyDown(KeyCode.UpArrow))
+        else if (getKey(KeyCode.UpArrow))
         {
             transform.Rotate(0, 0, -90);
 
@@ -128,13 +146,12 @@ public class GroupScript : MonoBehaviour
         }
 
         //down
-        else if (Input.GetKeyDown(KeyCode.DownArrow) ||
-         Time.time - lastFall >= 1)
+        else if (getKey(KeyCode.DownArrow) || Time.time - lastFall >= 1)
         {
             groupfall();
         }
         
-        else if (Input.GetKeyDown(KeyCode.Space))
+        else if (getKey(KeyCode.Space))
         {
             while (enabled)
                 groupfall();
